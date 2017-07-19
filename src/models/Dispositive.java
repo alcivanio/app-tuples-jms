@@ -2,6 +2,7 @@ package models;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 
+import jms.SenderQueue;
 import net.jini.core.entry.Entry;
 import net.jini.core.entry.UnusableEntryException;
 import net.jini.core.transaction.TransactionException;
@@ -42,24 +43,29 @@ public class Dispositive implements Entry {
 			System.out.println("Referencia de canal: " + rdc.channelId + " ref de dispositivo: " + rdc.deviceId + " was removed");
 			
 			//removing the channel itself
-			Channel c = (Channel) space.take(template, null, 60 * 1000);
+			Dispositive c = (Dispositive) space.take(template, null, 60 * 1000);
 			System.out.println(c.name + " was removed");
 		} catch (RemoteException | UnusableEntryException | TransactionException | InterruptedException e) { e.printStackTrace(); }
 	}
 	
 	
-	public static void move(Dispositive dispositive, Channel toChannel, JavaSpace space) {
+	public static void move(Dispositive dispositive, Channel fromChannel, Channel toChannel, JavaSpace space) {
 		try {
 			DispositiveChannel dcTemplate 	= new DispositiveChannel();
 			dcTemplate.deviceId 				= dispositive.id;
 			DispositiveChannel rdc 			= (DispositiveChannel) space.takeIfExists(dcTemplate, null, 60 * 10);
-			System.out.println("it was channel ref: " + rdc.channelId + " dispositive ref: " + rdc.deviceId);
+			
+			String outMessage = "OUT: " + dispositive.name;
+			SenderQueue.sendMessage(fromChannel, outMessage);
 			
 			if(rdc == null) { rdc = new DispositiveChannel(); }
 			
 			rdc.channelId = toChannel.id;
 			space.write(rdc, null, 60 * 1000);
-			System.out.println("now is channel ref: " + rdc.channelId + " dispositive ref: " + rdc.deviceId);
+
+			String inMessage = "IN: " + dispositive.name;
+			SenderQueue.sendMessage(toChannel, inMessage);
+			
 		} catch (RemoteException | UnusableEntryException | TransactionException | InterruptedException e) { e.printStackTrace(); }
 	}
 	
@@ -113,9 +119,6 @@ public class Dispositive implements Entry {
 		} catch (RemoteException | UnusableEntryException | TransactionException | InterruptedException e) { e.printStackTrace(); }
 		
 		return null;
-		
-		
-		
 		
 	}
 	

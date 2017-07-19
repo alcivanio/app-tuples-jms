@@ -3,6 +3,7 @@ import java.rmi.RemoteException;
 import java.util.ArrayList;
 
 import classes.Generals;
+import jms.ReceiverQueue;
 import net.jini.core.entry.Entry;
 import net.jini.core.entry.UnusableEntryException;
 import net.jini.core.lease.LeaseDeniedException;
@@ -16,6 +17,7 @@ public class Channel implements Entry {
 
 	public Integer  id;
 	public String	name;
+	public ArrayList<String> messages;
 	
 	public Channel() {}
 	
@@ -24,6 +26,7 @@ public class Channel implements Entry {
 		this.name 	= name;
 		this.id 		= id;
 	}
+	
 	
 	public static void add(Channel c, JavaSpace space, ChannelCounter cc) {
 		try {
@@ -35,6 +38,8 @@ public class Channel implements Entry {
 	
 	public static void remove(Channel template, JavaSpace space) {
 		try {
+			//check for spaces in the channel
+			
 			Channel c = (Channel) space.take(template, null, 60 * 1000);
 			System.out.println(c.name + " was removed");
 		} catch (RemoteException | UnusableEntryException | TransactionException | InterruptedException e) { e.printStackTrace(); }
@@ -102,6 +107,29 @@ public class Channel implements Entry {
 
 		} catch (RemoteException | UnusableEntryException | TransactionException | InterruptedException e) { e.printStackTrace(); }
 	}
+	
+	
+	public static void addMessage(Channel toC, ArrayList<String> mes, JavaSpace space) {
+		if (mes == null || mes.size() == 0) { return; }
+		
+		try {
+			Channel template = new Channel();
+			template.id = toC.id;
+			Channel c = (Channel) space.takeIfExists(template, null, 60 * 10);
+			if (c.messages == null) {
+				c.messages = new ArrayList<String>();
+			}
+			
+			c.messages.addAll(mes);
+			
+			space.write(c, null, 60 * 1000);
+
+		} catch (RemoteException | UnusableEntryException | TransactionException | InterruptedException e) { e.printStackTrace(); }
+		
+	}
+	
+	
+
 	
 	
 	

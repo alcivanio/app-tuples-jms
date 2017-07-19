@@ -6,9 +6,12 @@ import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
 import classes.Generals;
+import jms.ReceiverQueue;
+import jms.SenderQueue;
 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JSeparator;
@@ -24,6 +27,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 
 public class MainUI extends JFrame {
 
@@ -34,12 +38,20 @@ public class MainUI extends JFrame {
 	JButton createChannelBt;
 	JButton deleteChannel;
 	JButton createDeviceBt;
-	
-	
+	JButton moveDevice;
+	JButton deleteDevice;
+	JComboBox toChannelCombo;
+	JButton moveDone;
+	JLabel label;
+	JLabel lblAes;
+	JLabel toSwitchLb;
+	JButton btnMensagens;
 	
 	//aux variables
 	ArrayList<Channel> channels;
 	ArrayList<Dispositive> dispositives;
+	
+	Semaphore semUpdates = new Semaphore(1);
 	
 
 	/**
@@ -61,7 +73,9 @@ public class MainUI extends JFrame {
 	
 	public void initValues() {
 		generals = new Generals();
-		clearAllSystem();
+		//clearAllSystem();
+		setChannelsSelectVisible(false);
+		//checkForNewChannels();
 	}
 	
 	
@@ -71,6 +85,13 @@ public class MainUI extends JFrame {
 		ChannelCounter.clear(generals.space);//clear all the channel counters
 		DispositiveChannel.clear(generals.space);//clear all dispositive-channels
 		DispositiveCounter.clear(generals.space);//clear all dispositive counters
+	}
+	
+	
+	private void setChannelsSelectVisible(boolean isVisible) {
+		toChannelCombo.setVisible(isVisible);
+		toSwitchLb.setVisible(isVisible);
+		moveDone.setVisible(isVisible);
 	}
 	
 	
@@ -96,6 +117,36 @@ public class MainUI extends JFrame {
 				reloadDispositivesList();
 			}
 		});
+		
+		deleteDevice.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) { 
+				deleteDispositiveAction();
+			}
+		});
+		
+		moveDevice.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				moveDispositiveAction();
+			}
+		});
+		
+		moveDone.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				doneMoveDispositiveAction();
+			}
+		});
+		
+		btnMensagens.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				messagesListAction();
+			}
+		});
+		
+		
 	}
 	
 	
@@ -113,7 +164,7 @@ public class MainUI extends JFrame {
 		setContentPane(contentPane);
 		contentPane.setLayout(null);
 		
-		JLabel nextChannelLb = new JLabel("prox. canal: amb1");
+		JLabel nextChannelLb = new JLabel("Ambientes");
 		nextChannelLb.setBounds(6, 6, 159, 16);
 		contentPane.add(nextChannelLb);
 		
@@ -121,7 +172,7 @@ public class MainUI extends JFrame {
 		createChannelBt.setBounds(6, 29, 117, 29);
 		contentPane.add(createChannelBt);
 		
-		JLabel nextDeviceLb = new JLabel("prox. disp: disp1");
+		JLabel nextDeviceLb = new JLabel("Canais");
 		nextDeviceLb.setBounds(200, 6, 135, 16);
 		contentPane.add(nextDeviceLb);
 		
@@ -141,21 +192,13 @@ public class MainUI extends JFrame {
 		separator.setBounds(6, 74, 135, 12);
 		contentPane.add(separator);
 		
-		JLabel lblAes = new JLabel("Ações");
+		lblAes = new JLabel("Ações");
 		lblAes.setBounds(6, 168, 117, 16);
 		contentPane.add(lblAes);
 		
 		deleteChannel = new JButton("Deletar");
 		deleteChannel.setBounds(6, 198, 71, 29);
 		contentPane.add(deleteChannel);
-		
-		JButton listChannel = new JButton("Listar");
-		listChannel.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-			}
-		});
-		listChannel.setBounds(75, 198, 80, 29);
-		contentPane.add(listChannel);
 		
 		JSeparator separator_1 = new JSeparator();
 		separator_1.setOrientation(SwingConstants.VERTICAL);
@@ -170,7 +213,7 @@ public class MainUI extends JFrame {
 		lblListaDeDispositivos.setBounds(182, 98, 135, 16);
 		contentPane.add(lblListaDeDispositivos);
 		
-		JLabel toSwitchLb = new JLabel("Para");
+		toSwitchLb = new JLabel("Para");
 		toSwitchLb.setBounds(188, 240, 61, 16);
 		contentPane.add(toSwitchLb);
 		
@@ -178,25 +221,29 @@ public class MainUI extends JFrame {
 		deviceCombo.setBounds(178, 126, 135, 27);
 		contentPane.add(deviceCombo);
 		
-		JButton deleteDevice = new JButton("Deletar");
+		deleteDevice = new JButton("Deletar");
 		deleteDevice.setBounds(178, 198, 80, 29);
 		contentPane.add(deleteDevice);
 		
-		JButton moveDevice = new JButton("Mover");
+		moveDevice = new JButton("Mover");
 		moveDevice.setBounds(255, 198, 71, 29);
 		contentPane.add(moveDevice);
 		
-		JLabel label = new JLabel("Ações");
+		label = new JLabel("Ações");
 		label.setBounds(182, 168, 61, 16);
 		contentPane.add(label);
 		
-		JComboBox toChannelCombo = new JComboBox();
+		toChannelCombo = new JComboBox();
 		toChannelCombo.setBounds(182, 256, 135, 27);
 		contentPane.add(toChannelCombo);
 		
-		JButton moveDone = new JButton("Pronto");
+		moveDone = new JButton("Pronto");
 		moveDone.setBounds(315, 255, 71, 29);
 		contentPane.add(moveDone);
+		
+		btnMensagens = new JButton("Mensagens");
+		btnMensagens.setBounds(6, 227, 117, 29);
+		contentPane.add(btnMensagens);
 		
 		initValues();
 		startActions();
@@ -216,6 +263,20 @@ public class MainUI extends JFrame {
 	}
 	
 	
+	public void acquire() {
+		try {
+			semUpdates.acquire();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public void release() {
+		semUpdates.release();
+	}
+	
+	
 	public void reloadDispositivesList() {
 		if (channels == null || channels.size() == 0) { return; }
 		
@@ -228,46 +289,157 @@ public class MainUI extends JFrame {
 			dispositivesNames.add(ds.name);
 		}
 		
-		deviceCombo.setModel(new DefaultComboBoxModel(dispositivesNames.toArray()));	
+		EventQueue.invokeLater(new Runnable() {
+			public void run() {
+				deviceCombo.setModel(new DefaultComboBoxModel(dispositivesNames.toArray()));
+			}
+		});
+		
+			
+	}
+	
+	
+	public void reloadToChannelList() {
+		List<String> channelsName = new ArrayList<String>();
+		for(Channel c : channels) {
+			channelsName.add(c.name);
+		}
+		
+		EventQueue.invokeLater(new Runnable() {
+			public void run() {
+				toChannelCombo.setModel(new DefaultComboBoxModel(channelsName.toArray()));
+			}
+		});
+		
+		
 	}
 	
 	
 	
 	
+	public void checkForNewChannels() {
+		Thread checkingThread = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				while (true) {
+					try { Thread.sleep(1500); } 
+					catch (InterruptedException e) { e.printStackTrace(); }
+					checkNewChannelsAndDevices();
+				}
+			}
+		});
+		
+		checkingThread.start();
+	}
+	
+	
+	public void checkNewChannelsAndDevices() {
+		
+	
+		acquire();
+		System.out.println("0");
+		ArrayList<Channel> cs = Channel.getAll(generals.space);
+		if(channels == null || channels.size() == 0) { 
+			channels = cs;
+			reloadChannelsList();
+			reloadDispositivesList();
+			System.out.println("1");
+		}
+		
+		else {
+			
+			System.out.println("2");
+			boolean cDifferent = false;
+			for(int i=0; i<cs.size(); i++) {
+				boolean found = false;
+				for(int j=0; j<channels.size(); j++) {
+					if(cs.get(i).id == channels.get(j).id) {found = true;}
+				}
+				if (!found) {cDifferent = true; i=1000;}
+			}
+			
+			if (cDifferent) {
+				reloadChannelsList();
+				reloadDispositivesList();
+				System.out.println("3");
+			}
+			
+			if (channels != null && channels.size() > 0) {
+				Channel c = channels.get(channelCombo.getSelectedIndex());
+				ArrayList<Dispositive> ds = Dispositive.getAll(c, generals.space);
+				System.out.println("4");
+				if(dispositives == null || dispositives.size() == 0) {
+					dispositives = ds;
+					System.out.println("5");
+					reloadDispositivesList();
+				}
+				
+				else {
+					System.out.println("6");
+					cDifferent = false;
+					for(int i=0; i<ds.size(); i++) {
+						boolean found = false;
+						for(int j=0; j<dispositives.size(); j++) {
+							if (ds.get(i).id.intValue() == ds.get(j).id.intValue()) {found = true;}
+						}
+						if (!found) { cDifferent = true; i=1000; }
+					}
+					
+					if (cDifferent) {
+						reloadDispositivesList();
+						System.out.println("7");
+					}
+				}
+			}
+			
+		}
+		
+		
+		
+		release();
+		System.out.println("8");
+	}
+	
 	
 	
 	//actions
 	public void createChannelAction() {
+		acquire();
 		ChannelCounter cCounter = ChannelCounter.get(generals.space);
 		String cName 			= "amb" + (cCounter.count + 1); 
 		Channel c 				= new Channel(cCounter.count, cName); 
 		
 		Channel.add(c, generals.space, cCounter);
 		reloadChannelsList();
+		release();
 	}
 	
 	
 	public void deleteChannelAction() {
 		if (channels == null || channels.size() == 0) { return; }
 		
+		acquire();
 		int selectedIndex = channelCombo.getSelectedIndex();
 		Channel cToDelete = channels.get(selectedIndex);
 		Channel.remove(cToDelete, generals.space);
 		reloadChannelsList();
+		release();
 	}
 	
 	
 	public void createDispositiveAction() {
 		if (channels == null || channels.size() == 0) { return; }
+		
+		acquire();
 		int selectedChannelIndex = channelCombo.getSelectedIndex();
 		Channel sChannel = channels.get(selectedChannelIndex);
-		
 		DispositiveCounter dCounter = DispositiveCounter.get(generals.space);
 		String dcName = "disp" + (dCounter.count + 1);
 		Dispositive dsp = new Dispositive(dCounter.count, dcName);
 		
 		Dispositive.add(dsp, sChannel, generals.space, dCounter);
 		reloadDispositivesList();
+		release();
 		
 		/*ChannelCounter cCounter = ChannelCounter.get(generals.space);
 		String cName 			= "dev" + cCounter.count; 
@@ -278,10 +450,80 @@ public class MainUI extends JFrame {
 	}
 	
 	
+	public void deleteDispositiveAction() {
+		if (dispositives == null || dispositives.size() == 0) { return; }
+		
+		acquire();
+		int selectedIndex = deviceCombo.getSelectedIndex();
+		Dispositive d = dispositives.get(selectedIndex);
+		
+		Dispositive.remove(d, generals.space);
+		reloadDispositivesList();
+		release();
+	}
 	
 	
+	public void moveDispositiveAction() {
+		if (dispositives == null || dispositives.size() == 0) { return; }
+		
+		acquire();
+		reloadToChannelList();
+		setChannelsSelectVisible(true);
+		release();
+	}
+	
+	
+	public void doneMoveDispositiveAction() {
+		if (dispositives == null || dispositives.size() == 0 || channels == null || channels.size() == 0) { return; }
+		
+		acquire();
+		int sIndexFromChannel	= channelCombo.getSelectedIndex();
+		int sIndexToChannel 		= toChannelCombo.getSelectedIndex();
+		int sIndexDevices 		= deviceCombo.getSelectedIndex();
+		
+		Dispositive d 	= dispositives.get(sIndexDevices);
+		Channel fromC	= channels.get(sIndexFromChannel);
+		Channel toC 		= channels.get(sIndexToChannel);
+		
+		Dispositive.move(d, fromC, toC, generals.space);
+		
+		setChannelsSelectVisible(false);
+		reloadDispositivesList();
+		
+		release();
+	}
+	
+	
+	public void messagesListAction() {
+		if (channels == null || channels.size()  == 0) { return; }
+		
+		int sIndexChannel = channelCombo.getSelectedIndex();
+		Channel c = channels.get(sIndexChannel);
+		
+		ArrayList<String> newMessages = ReceiverQueue.readMessages(c);
+		Channel.addMessage(c, newMessages, generals.space);
+		
+		String fMessage = "";
+		for (String s : newMessages) {
+			fMessage = fMessage + "\n";
+			fMessage = fMessage + s;
+		}
+		
+		JOptionPane.showMessageDialog(this, fMessage);
+		
+	}
 	
 	
 	
 	
 }
+
+
+
+
+
+
+
+
+
+
