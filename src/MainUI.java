@@ -172,7 +172,7 @@ public class MainUI extends JFrame {
 		createChannelBt.setBounds(6, 29, 117, 29);
 		contentPane.add(createChannelBt);
 		
-		JLabel nextDeviceLb = new JLabel("Canais");
+		JLabel nextDeviceLb = new JLabel("Dispositivos");
 		nextDeviceLb.setBounds(200, 6, 135, 16);
 		contentPane.add(nextDeviceLb);
 		
