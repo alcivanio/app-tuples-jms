@@ -109,7 +109,7 @@ public class Channel implements Entry {
 	}
 	
 	
-	public static void addMessage(Channel toC, ArrayList<String> mes, JavaSpace space) {
+	/*public static void addMessage(Channel toC, ArrayList<String> mes, JavaSpace space) {
 		if (mes == null || mes.size() == 0) { return; }
 		
 		try {
@@ -126,7 +126,7 @@ public class Channel implements Entry {
 
 		} catch (RemoteException | UnusableEntryException | TransactionException | InterruptedException e) { e.printStackTrace(); }
 		
-	}
+	}*/
 	
 	
 

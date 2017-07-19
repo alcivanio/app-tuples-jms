@@ -454,10 +454,12 @@ public class MainUI extends JFrame {
 		if (dispositives == null || dispositives.size() == 0) { return; }
 		
 		acquire();
-		int selectedIndex = deviceCombo.getSelectedIndex();
-		Dispositive d = dispositives.get(selectedIndex);
+		int selectedIndex 	= deviceCombo.getSelectedIndex();
+		int sIndexChannel 	= channelCombo.getSelectedIndex();
+		Dispositive d 		= dispositives.get(selectedIndex);
+		Channel c 			= channels.get(sIndexChannel);		
 		
-		Dispositive.remove(d, generals.space);
+		Dispositive.remove(d, c, generals.space);
 		reloadDispositivesList();
 		release();
 	}
@@ -501,7 +503,7 @@ public class MainUI extends JFrame {
 		Channel c = channels.get(sIndexChannel);
 		
 		ArrayList<String> newMessages = ReceiverQueue.readMessages(c);
-		Channel.addMessage(c, newMessages, generals.space);
+		//Channel.addMessage(c, newMessages, generals.space);
 		
 		String fMessage = "";
 		for (String s : newMessages) {
@@ -510,7 +512,6 @@ public class MainUI extends JFrame {
 		}
 		
 		JOptionPane.showMessageDialog(this, fMessage);
-		
 	}
 	
 	

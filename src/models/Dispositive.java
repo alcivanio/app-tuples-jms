@@ -30,11 +30,14 @@ public class Dispositive implements Entry {
 			space.write(dcr, null, 60*1000);
 			space.write(c, null, 60 * 1000);
 			dc.more(space);
+			
+			String inMessage = "IN: " + c.name;
+			SenderQueue.sendMessage(channel, inMessage);
 		} catch (RemoteException | TransactionException e) { e.printStackTrace(); }
 	}
 	
 	
-	public static void remove(Dispositive template, JavaSpace space) {
+	public static void remove(Dispositive template, Channel fromChannel, JavaSpace space) {
 		try {
 			//removing the reference of the dispositive / channel
 			DispositiveChannel dcTemplate 	= new DispositiveChannel();
@@ -45,6 +48,9 @@ public class Dispositive implements Entry {
 			//removing the channel itself
 			Dispositive c = (Dispositive) space.take(template, null, 60 * 1000);
 			System.out.println(c.name + " was removed");
+			
+			String inMessage = "OUT: " + c.name;
+			SenderQueue.sendMessage(fromChannel, inMessage);
 		} catch (RemoteException | UnusableEntryException | TransactionException | InterruptedException e) { e.printStackTrace(); }
 	}
 	
